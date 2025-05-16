@@ -23,10 +23,12 @@ const subjects = [
 ];
 
 interface SearchFiltersProps {
-  onSearch: (filters: any) => void;
+  onSearch: (value: string) => void;
+  onSubjectFilter: (value: string) => void;
+  onPriceRange: (value: [number, number]) => void;
 }
 
-const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
+const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch, onSubjectFilter, onPriceRange }) => {
   const [query, setQuery] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [experienceRange, setExperienceRange] = useState([0]);
@@ -41,12 +43,17 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
   };
   
   const handleSearch = () => {
-    onSearch({
-      query,
-      subjects: selectedSubjects,
-      minExperience: experienceRange[0],
-      maxPrice: priceRange[0]
-    });
+    onSearch(query);
+    
+    // If multiple subjects are selected, just use the first one for filtering
+    // (or you could implement more complex filtering logic)
+    if (selectedSubjects.length > 0) {
+      onSubjectFilter(selectedSubjects[0]);
+    } else {
+      onSubjectFilter("");
+    }
+    
+    onPriceRange([priceRange[0], 200]);
   };
   
   const clearFilters = () => {
@@ -54,6 +61,9 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch }) => {
     setSelectedSubjects([]);
     setExperienceRange([0]);
     setPriceRange([100]);
+    onSearch("");
+    onSubjectFilter("");
+    onPriceRange([0, 200]);
   };
 
   return (

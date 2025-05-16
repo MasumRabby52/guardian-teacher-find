@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import SearchFilters from "@/components/common/SearchFilters";
 import TeacherCard, { TeacherType } from "@/components/common/TeacherCard";
+import { toast } from "@/components/ui/use-toast";
 
 // Sample fallback data
 const sampleTeachers = [
@@ -57,26 +58,65 @@ const FindTutors: React.FC = () => {
       try {
         // Get teachers from localStorage
         const teachersJSON = localStorage.getItem('teachers');
+        const profileFormJSON = localStorage.getItem('profileForm');
         
-        if (teachersJSON) {
-          const storedTeachers = JSON.parse(teachersJSON);
-          
-          // Check if we have some teachers saved
-          if (storedTeachers && storedTeachers.length > 0) {
-            console.log("Loaded teachers from localStorage:", storedTeachers.length);
-            setTeachers(storedTeachers);
-          } else {
-            // Use sample data if no teachers found
-            console.log("No teachers found in localStorage, using sample data");
-            setTeachers(sampleTeachers);
+        let allTeachers = [...sampleTeachers]; // Start with sample data
+        
+        // Add teacher from profile form if exists
+        if (profileFormJSON) {
+          try {
+            const profileFormData = JSON.parse(profileFormJSON);
+            // Create a teacher object from profile form data
+            const newTeacher = {
+              id: `profile-${Date.now()}`,
+              name: profileFormData.fullName || 'New Teacher',
+              avatar: profileFormData.avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
+              subjects: profileFormData.subjects ? profileFormData.subjects.split(',').map((s: string) => s.trim()) : ['General'],
+              experience: parseInt(profileFormData.experienceYears) || 1,
+              rating: 5.0, // Default rating for new teachers
+              hourlyRate: parseInt(profileFormData.hourlyRate) || 30,
+              location: profileFormData.location || 'Unknown Location',
+              availability: profileFormData.availability || 'Flexible hours',
+              bio: profileFormData.bio || 'New tutor on the platform',
+              education: profileFormData.qualifications ? [profileFormData.qualifications] : ['Bachelor\'s degree'],
+              certifications: profileFormData.certifications ? [profileFormData.certifications] : ['Certified Teacher']
+            };
+            allTeachers.push(newTeacher);
+          } catch (e) {
+            console.error("Error parsing profile form data:", e);
           }
-        } else {
-          // Use sample data if localStorage doesn't exist
-          console.log("Teachers not found in localStorage, using sample data");
-          setTeachers(sampleTeachers);
         }
+        
+        // Add teachers from localStorage if exist
+        if (teachersJSON) {
+          try {
+            const storedTeachers = JSON.parse(teachersJSON);
+            if (Array.isArray(storedTeachers) && storedTeachers.length > 0) {
+              // Combine with existing teachers but avoid duplicates by ID
+              const existingIds = allTeachers.map(t => t.id);
+              const uniqueStoredTeachers = storedTeachers.filter(
+                (t: TeacherType) => !existingIds.includes(t.id)
+              );
+              allTeachers = [...allTeachers, ...uniqueStoredTeachers];
+            }
+          } catch (e) {
+            console.error("Error parsing teachers from localStorage:", e);
+          }
+        }
+        
+        console.log(`Loaded ${allTeachers.length} teachers`);
+        setTeachers(allTeachers);
+        
+        // Save all teachers back to localStorage for consistency
+        localStorage.setItem('teachers', JSON.stringify(allTeachers));
+        
       } catch (error) {
         console.error("Error loading teachers:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load teacher data",
+          variant: "destructive",
+        });
         setTeachers(sampleTeachers);
       } finally {
         setLoading(false);
@@ -94,7 +134,7 @@ const FindTutors: React.FC = () => {
       teacher.subjects.some(subject => 
         subject.toLowerCase().includes(searchTerm.toLowerCase())
       ) ||
-      teacher.location.toLowerCase().includes(searchTerm.toLowerCase());
+      (teacher.location && teacher.location.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Subject filter
     const matchesSubject = subjectFilter === "" || 
