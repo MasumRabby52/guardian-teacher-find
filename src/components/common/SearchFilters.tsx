@@ -26,9 +26,15 @@ interface SearchFiltersProps {
   onSearch: (value: string) => void;
   onSubjectFilter: (value: string) => void;
   onPriceRange: (value: [number, number]) => void;
+  onExperienceRange?: (value: number) => void;
 }
 
-const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch, onSubjectFilter, onPriceRange }) => {
+const SearchFilters: React.FC<SearchFiltersProps> = ({ 
+  onSearch, 
+  onSubjectFilter, 
+  onPriceRange, 
+  onExperienceRange 
+}) => {
   const [query, setQuery] = useState("");
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [experienceRange, setExperienceRange] = useState([0]);
@@ -53,7 +59,12 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch, onSubjectFilter
       onSubjectFilter("");
     }
     
-    onPriceRange([priceRange[0], 200]);
+    onPriceRange([0, priceRange[0]]);
+    
+    // Apply experience filter if the handler exists
+    if (onExperienceRange) {
+      onExperienceRange(experienceRange[0]);
+    }
   };
   
   const clearFilters = () => {
@@ -64,6 +75,9 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch, onSubjectFilter
     onSearch("");
     onSubjectFilter("");
     onPriceRange([0, 200]);
+    if (onExperienceRange) {
+      onExperienceRange(0);
+    }
   };
 
   return (
@@ -129,7 +143,12 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({ onSearch, onSubjectFilter
               max={20}
               step={1}
               value={experienceRange}
-              onValueChange={setExperienceRange}
+              onValueChange={(values) => {
+                setExperienceRange(values);
+                if (onExperienceRange) {
+                  onExperienceRange(values[0]);
+                }
+              }}
             />
             <div className="flex justify-between mt-2">
               <span className="text-sm text-gray-500">0 years</span>

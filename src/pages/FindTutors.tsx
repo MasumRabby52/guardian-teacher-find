@@ -6,7 +6,7 @@ import SearchFilters from "@/components/common/SearchFilters";
 import TeacherCard, { TeacherType } from "@/components/common/TeacherCard";
 import { toast } from "@/components/ui/use-toast";
 
-// Sample fallback data
+// More detailed sample fallback data
 const sampleTeachers = [
   {
     id: "1",
@@ -43,6 +43,30 @@ const sampleTeachers = [
     location: "Chicago, IL",
     availability: "Monday-Friday, flexible hours",
     bio: "Former journalist with a master's in English Literature. I help students improve their writing skills, comprehension, and literary analysis through engaging discussions and personalized feedback."
+  },
+  {
+    id: "4",
+    name: "Robert Johnson",
+    avatar: "https://randomuser.me/api/portraits/men/45.jpg",
+    subjects: ["Computer Science", "Programming"],
+    experience: 12,
+    rating: 4.8,
+    hourlyRate: 55,
+    location: "Austin, TX",
+    availability: "Evenings and weekends",
+    bio: "Software engineer with over a decade of experience teaching coding and computer science. I focus on practical skills and real-world applications to help students succeed in tech careers."
+  },
+  {
+    id: "5",
+    name: "Emily Zhang",
+    avatar: "https://randomuser.me/api/portraits/women/33.jpg",
+    subjects: ["History", "Geography", "Social Studies"],
+    experience: 7,
+    rating: 4.9,
+    hourlyRate: 42,
+    location: "Boston, MA",
+    availability: "Flexible schedule, seven days a week",
+    bio: "History teacher with a passion for bringing the past to life. I use storytelling, primary sources, and interactive discussions to make learning history engaging and meaningful."
   }
 ];
 
@@ -51,52 +75,60 @@ const FindTutors: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [subjectFilter, setSubjectFilter] = useState<string>("");
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100]);
+  const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
+  const [experienceFilter, setExperienceFilter] = useState<number>(0);
 
   useEffect(() => {
     const loadTeachers = () => {
       try {
+        // Always start with the sample data to ensure profiles are available
+        let allTeachers = [...sampleTeachers];
+        
+        // Get and process profile form data
+        const processProfileFormData = () => {
+          const profileFormJSON = localStorage.getItem('profileForm');
+          if (profileFormJSON) {
+            try {
+              const profileFormData = JSON.parse(profileFormJSON);
+              // Create a teacher object from profile form data
+              const newTeacher = {
+                id: `profile-${Date.now()}`,
+                name: profileFormData.fullName || profileFormData.name || 'New Teacher',
+                avatar: profileFormData.avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
+                subjects: profileFormData.subjects ? (Array.isArray(profileFormData.subjects) ? 
+                  profileFormData.subjects : profileFormData.subjects.split(',').map((s: string) => s.trim())) : ['General'],
+                experience: parseInt(profileFormData.experienceYears || profileFormData.experience) || 1,
+                rating: 5.0,
+                hourlyRate: parseInt(profileFormData.hourlyRate) || 30,
+                location: profileFormData.location || 'Unknown Location',
+                availability: profileFormData.availability || 'Flexible hours',
+                bio: profileFormData.bio || 'New tutor on the platform',
+                education: profileFormData.qualifications ? [profileFormData.qualifications] : ['Bachelor\'s degree'],
+                certifications: profileFormData.certifications ? [profileFormData.certifications] : ['Certified Teacher']
+              };
+              return newTeacher;
+            } catch (e) {
+              console.error("Error parsing profile form data:", e);
+            }
+          }
+          return null;
+        };
+        
         // Get teachers from localStorage
         const teachersJSON = localStorage.getItem('teachers');
-        const profileFormJSON = localStorage.getItem('profileForm');
-        
-        let allTeachers = [...sampleTeachers]; // Start with sample data
-        
-        // Add teacher from profile form if exists
-        if (profileFormJSON) {
-          try {
-            const profileFormData = JSON.parse(profileFormJSON);
-            // Create a teacher object from profile form data
-            const newTeacher = {
-              id: `profile-${Date.now()}`,
-              name: profileFormData.fullName || 'New Teacher',
-              avatar: profileFormData.avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
-              subjects: profileFormData.subjects ? profileFormData.subjects.split(',').map((s: string) => s.trim()) : ['General'],
-              experience: parseInt(profileFormData.experienceYears) || 1,
-              rating: 5.0, // Default rating for new teachers
-              hourlyRate: parseInt(profileFormData.hourlyRate) || 30,
-              location: profileFormData.location || 'Unknown Location',
-              availability: profileFormData.availability || 'Flexible hours',
-              bio: profileFormData.bio || 'New tutor on the platform',
-              education: profileFormData.qualifications ? [profileFormData.qualifications] : ['Bachelor\'s degree'],
-              certifications: profileFormData.certifications ? [profileFormData.certifications] : ['Certified Teacher']
-            };
-            allTeachers.push(newTeacher);
-          } catch (e) {
-            console.error("Error parsing profile form data:", e);
-          }
-        }
         
         // Add teachers from localStorage if exist
         if (teachersJSON) {
           try {
             const storedTeachers = JSON.parse(teachersJSON);
             if (Array.isArray(storedTeachers) && storedTeachers.length > 0) {
-              // Combine with existing teachers but avoid duplicates by ID
-              const existingIds = allTeachers.map(t => t.id);
+              // Filter out any duplicate IDs from sample data
+              const sampleIds = sampleTeachers.map(t => t.id);
               const uniqueStoredTeachers = storedTeachers.filter(
-                (t: TeacherType) => !existingIds.includes(t.id)
+                (t: TeacherType) => !sampleIds.includes(t.id)
               );
+              
+              // Combine all teachers
               allTeachers = [...allTeachers, ...uniqueStoredTeachers];
             }
           } catch (e) {
@@ -104,10 +136,24 @@ const FindTutors: React.FC = () => {
           }
         }
         
+        // Add profile form teacher if it exists and isn't already in the list
+        const profileTeacher = processProfileFormData();
+        if (profileTeacher) {
+          // Check if this profile already exists in allTeachers to avoid duplicates
+          const existingProfileIndex = allTeachers.findIndex(t => 
+            t.name === profileTeacher.name && 
+            t.bio === profileTeacher.bio
+          );
+          
+          if (existingProfileIndex === -1) {
+            allTeachers.push(profileTeacher);
+          }
+        }
+        
         console.log(`Loaded ${allTeachers.length} teachers`);
         setTeachers(allTeachers);
         
-        // Save all teachers back to localStorage for consistency
+        // Save all teachers to localStorage for persistence
         localStorage.setItem('teachers', JSON.stringify(allTeachers));
         
       } catch (error) {
@@ -144,7 +190,10 @@ const FindTutors: React.FC = () => {
     const matchesPrice = teacher.hourlyRate >= priceRange[0] && 
       teacher.hourlyRate <= priceRange[1];
     
-    return matchesSearch && matchesSubject && matchesPrice;
+    // Experience filter
+    const matchesExperience = teacher.experience >= experienceFilter;
+    
+    return matchesSearch && matchesSubject && matchesPrice && matchesExperience;
   });
 
   const handleSearch = (value: string) => {
@@ -157,6 +206,10 @@ const FindTutors: React.FC = () => {
 
   const handlePriceRange = (value: [number, number]) => {
     setPriceRange(value);
+  };
+
+  const handleExperienceFilter = (value: number) => {
+    setExperienceFilter(value);
   };
 
   return (
@@ -179,6 +232,7 @@ const FindTutors: React.FC = () => {
             onSearch={handleSearch}
             onSubjectFilter={handleSubjectFilter}
             onPriceRange={handlePriceRange}
+            onExperienceRange={handleExperienceFilter}
           />
           
           {/* Teachers Grid */}
