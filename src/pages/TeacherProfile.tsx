@@ -1,6 +1,5 @@
-
-import React from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -8,9 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
+import { TeacherType } from "@/components/common/TeacherCard";
 
-// Sample teacher data - in a real app this would come from an API
-const teacherData = {
+// Sample teacher data as fallback
+const sampleTeacherData = {
   id: "1",
   name: "Dr. Sarah Williams",
   avatar: "https://randomuser.me/api/portraits/women/68.jpg",
@@ -58,8 +58,69 @@ const teacherData = {
 
 const TeacherProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  // In a real app, you would fetch the teacher data using the id
-  const teacher = teacherData;
+  const navigate = useNavigate();
+  const [teacher, setTeacher] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadTeacherData = () => {
+      try {
+        // Get teachers from localStorage
+        const teachersJSON = localStorage.getItem('teachers');
+        
+        if (teachersJSON) {
+          const teachers = JSON.parse(teachersJSON);
+          // Find the teacher with the matching ID
+          const foundTeacher = teachers.find((t: any) => t.id === id);
+          
+          if (foundTeacher) {
+            // Add default properties if they don't exist
+            const enhancedTeacher = {
+              ...foundTeacher,
+              education: foundTeacher.education || [
+                `${foundTeacher.qualifications}`
+              ],
+              certifications: foundTeacher.certifications || [
+                "Teacher Certification"
+              ],
+              teachingApproach: foundTeacher.teachingApproach || 
+                `As a teacher with ${foundTeacher.experience} years of experience, I focus on helping students understand ${foundTeacher.subjects.join(", ")} through personalized lessons tailored to each student's needs.`,
+              reviews: foundTeacher.reviews || []
+            };
+            
+            setTeacher(enhancedTeacher);
+          } else {
+            // If no teacher found with that ID, use sample data
+            console.log("Teacher not found, using sample data");
+            setTeacher(sampleTeacherData);
+          }
+        } else {
+          // If no teachers in localStorage, use sample data
+          console.log("No teachers in localStorage, using sample data");
+          setTeacher(sampleTeacherData);
+        }
+      } catch (error) {
+        console.error("Error loading teacher data:", error);
+        setTeacher(sampleTeacherData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadTeacherData();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center">
+          <p className="text-xl">Loading teacher profile...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">

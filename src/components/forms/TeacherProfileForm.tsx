@@ -1,9 +1,9 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 
 import {
   Form,
@@ -70,6 +70,7 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
 const TeacherProfileForm: React.FC = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   
   const form = useForm<ProfileFormValues>({
@@ -102,14 +103,58 @@ const TeacherProfileForm: React.FC = () => {
   };
 
   const onSubmit = (data: ProfileFormValues) => {
-    console.log("Form data:", data);
-    
-    // Here you would typically send the data to your backend API
-    // For now we'll just show a success toast
-    toast({
-      title: "Profile Created!",
-      description: "Your teacher profile has been successfully created.",
-    });
+    try {
+      // Generate a unique ID for the teacher profile
+      const teacherId = `teacher_${Date.now()}`;
+      
+      // Create a teacher object to save
+      const teacherToSave = {
+        id: teacherId,
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        bio: data.bio,
+        subjects: data.subjects,
+        experience: data.experience,
+        hourlyRate: data.hourlyRate,
+        qualifications: data.qualifications,
+        location: data.location,
+        availability: data.availability,
+        avatar: avatarPreview,
+        rating: 0, // Default rating for new teachers
+        createdAt: new Date().toISOString(),
+      };
+      
+      // Get existing teachers or initialize empty array
+      const existingTeachersJSON = localStorage.getItem('teachers');
+      const existingTeachers = existingTeachersJSON ? JSON.parse(existingTeachersJSON) : [];
+      
+      // Add new teacher to array
+      existingTeachers.push(teacherToSave);
+      
+      // Save updated array back to localStorage
+      localStorage.setItem('teachers', JSON.stringify(existingTeachers));
+      
+      console.log("Teacher profile saved:", teacherToSave);
+      
+      // Show success toast
+      toast({
+        title: "Profile Created!",
+        description: "Your teacher profile has been successfully created.",
+      });
+      
+      // Navigate to teacher profile page
+      setTimeout(() => {
+        navigate(`/teacher/${teacherId}`);
+      }, 1500);
+    } catch (error) {
+      console.error("Error saving teacher profile:", error);
+      toast({
+        title: "Error",
+        description: "There was an error saving your profile. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
