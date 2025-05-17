@@ -17,6 +17,11 @@ export type TeacherType = {
   location: string;
   availability: string;
   bio: string;
+  education?: string[];
+  certifications?: string[];
+  createdBy?: string;
+  teachingApproach?: string;
+  reviews?: any[];
 };
 
 interface TeacherCardProps {

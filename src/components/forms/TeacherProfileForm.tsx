@@ -107,6 +107,10 @@ const TeacherProfileForm: React.FC = () => {
       // Generate a unique ID for the teacher profile
       const teacherId = `teacher_${Date.now()}`;
       
+      // Get current user
+      const currentUserJSON = localStorage.getItem("currentUser");
+      const currentUser = currentUserJSON ? JSON.parse(currentUserJSON) : null;
+      
       // Create a teacher object to save
       const teacherToSave = {
         id: teacherId,
@@ -120,27 +124,68 @@ const TeacherProfileForm: React.FC = () => {
         qualifications: data.qualifications,
         location: data.location,
         availability: data.availability,
-        avatar: avatarPreview,
+        avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg", // Ensure avatar is never null
         rating: 0, // Default rating for new teachers
         createdAt: new Date().toISOString(),
+        createdBy: currentUser ? currentUser.id : 'anonymous'
       };
       
-      // Get existing teachers or initialize empty array
-      const existingTeachersJSON = localStorage.getItem('teachers');
+      // Get existing teachers from global storage
+      const GLOBAL_TEACHERS_KEY = "global_teachers_data";
+      const existingTeachersJSON = localStorage.getItem(GLOBAL_TEACHERS_KEY);
       const existingTeachers = existingTeachersJSON ? JSON.parse(existingTeachersJSON) : [];
       
       // Add new teacher to array
       existingTeachers.push(teacherToSave);
       
-      // Save updated array back to localStorage
-      localStorage.setItem('teachers', JSON.stringify(existingTeachers));
+      // Save updated array back to global localStorage
+      localStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(existingTeachers));
+      
+      // Also update profileForms for consistency
+      const profileFormsJSON = localStorage.getItem('profileForms');
+      const profileForms = profileFormsJSON ? JSON.parse(profileFormsJSON) : [];
+      
+      profileForms.push({
+        id: teacherId,
+        name: data.name,
+        email: data.email,
+        phone: data.phone, 
+        bio: data.bio,
+        subjects: data.subjects,
+        experienceYears: data.experience,
+        hourlyRate: data.hourlyRate,
+        qualifications: data.qualifications,
+        location: data.location,
+        availability: data.availability,
+        avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg",
+        userId: currentUser ? currentUser.id : 'anonymous'
+      });
+      
+      localStorage.setItem('profileForms', JSON.stringify(profileForms));
+      
+      // For individual profile form - this helps with immediate updates
+      localStorage.setItem('profileForm', JSON.stringify({
+        id: teacherId,
+        name: data.name,
+        email: data.email,
+        phone: data.phone, 
+        bio: data.bio,
+        subjects: data.subjects,
+        experienceYears: data.experience,
+        hourlyRate: data.hourlyRate,
+        qualifications: data.qualifications,
+        location: data.location,
+        availability: data.availability,
+        avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg",
+        userId: currentUser ? currentUser.id : 'anonymous'
+      }));
       
       console.log("Teacher profile saved:", teacherToSave);
       
       // Show success toast
       toast({
         title: "Profile Created!",
-        description: "Your teacher profile has been successfully created.",
+        description: "Your teacher profile has been successfully created and is now visible to others.",
       });
       
       // Navigate to teacher profile page

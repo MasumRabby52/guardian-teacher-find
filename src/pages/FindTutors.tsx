@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -85,17 +84,17 @@ const FindTutors: React.FC = () => {
     const loadTeachers = () => {
       try {
         // Always start with the sample data to ensure profiles are available
-        let allTeachers = [...sampleTeachers];
+        let allTeachers: TeacherType[] = [...sampleTeachers];
         
         // Process and get profile form data from localStorage
         const processProfileForms = () => {
           // Get all profile forms
-          const profileFormsJSON = localStorage.getItem('profileForms');
-          if (!profileFormsJSON) return [];
+          const profileForms = localStorage.getItem('profileForms');
+          if (!profileForms) return [];
           
           try {
-            const profileForms = JSON.parse(profileFormsJSON);
-            return profileForms.map((formData: any) => {
+            const parsedProfileForms = JSON.parse(profileForms);
+            return parsedProfileForms.map((formData: any) => {
               // Create a teacher object from profile form data
               return {
                 id: formData.id || `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -193,17 +192,18 @@ const FindTutors: React.FC = () => {
               allTeachers.push(newTeacher);
               
               // Add to profile forms collection
-              const profileForms = profileFormsJSON ? JSON.parse(profileFormsJSON) : [];
-              profileForms.push({
+              const profileForms = localStorage.getItem('profileForms');
+              const parsedProfileForms = profileForms ? JSON.parse(profileForms) : [];
+              parsedProfileForms.push({
                 ...profileFormData,
                 id: newTeacher.id,
                 userId: currentUser ? currentUser.id : 'anonymous'
               });
-              localStorage.setItem('profileForms', JSON.stringify(profileForms));
+              localStorage.setItem('profileForms', JSON.stringify(parsedProfileForms));
             } else {
               // Update if exists
               allTeachers[existingIndex] = {
-                ...allTeachers[existingIndex],
+                ...allTeachers[existingTeacherIndex],
                 ...newTeacher
               };
             }
