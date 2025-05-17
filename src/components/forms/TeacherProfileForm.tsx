@@ -68,6 +68,9 @@ const profileFormSchema = z.object({
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
 
+// Define a constant for localStorage key to ensure consistency
+const GLOBAL_TEACHERS_KEY = "global_teachers_data";
+
 const TeacherProfileForm: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -125,13 +128,12 @@ const TeacherProfileForm: React.FC = () => {
         location: data.location,
         availability: data.availability,
         avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg", // Ensure avatar is never null
-        rating: 0, // Default rating for new teachers
+        rating: 5.0, // Default rating for new teachers
         createdAt: new Date().toISOString(),
         createdBy: currentUser ? currentUser.id : 'anonymous'
       };
       
       // Get existing teachers from global storage
-      const GLOBAL_TEACHERS_KEY = "global_teachers_data";
       const existingTeachersJSON = localStorage.getItem(GLOBAL_TEACHERS_KEY);
       const existingTeachers = existingTeachersJSON ? JSON.parse(existingTeachersJSON) : [];
       
@@ -140,6 +142,8 @@ const TeacherProfileForm: React.FC = () => {
       
       // Save updated array back to global localStorage
       localStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(existingTeachers));
+      
+      console.log("Teacher profile saved to global storage:", teacherToSave);
       
       // Also update profileForms for consistency
       const profileFormsJSON = localStorage.getItem('profileForms');
@@ -162,6 +166,7 @@ const TeacherProfileForm: React.FC = () => {
       });
       
       localStorage.setItem('profileForms', JSON.stringify(profileForms));
+      console.log("Profile forms updated");
       
       // For individual profile form - this helps with immediate updates
       localStorage.setItem('profileForm', JSON.stringify({
@@ -179,8 +184,6 @@ const TeacherProfileForm: React.FC = () => {
         avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg",
         userId: currentUser ? currentUser.id : 'anonymous'
       }));
-      
-      console.log("Teacher profile saved:", teacherToSave);
       
       // Show success toast
       toast({

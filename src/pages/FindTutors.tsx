@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -69,6 +70,9 @@ const sampleTeachers = [
   }
 ];
 
+// Define a constant for localStorage key to ensure consistency
+const GLOBAL_TEACHERS_KEY = "global_teachers_data";
+
 const FindTutors: React.FC = () => {
   const [teachers, setTeachers] = useState<TeacherType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,9 +81,6 @@ const FindTutors: React.FC = () => {
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
   const [experienceFilter, setExperienceFilter] = useState<number>(0);
   
-  // Use a global storage key for consistency
-  const GLOBAL_TEACHERS_KEY = "global_teachers_data";
-
   useEffect(() => {
     const loadTeachers = () => {
       try {
@@ -203,7 +204,7 @@ const FindTutors: React.FC = () => {
             } else {
               // Update if exists
               allTeachers[existingIndex] = {
-                ...allTeachers[existingTeacherIndex],
+                ...allTeachers[existingIndex],
                 ...newTeacher
               };
             }
