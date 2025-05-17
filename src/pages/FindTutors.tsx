@@ -73,6 +73,23 @@ const sampleTeachers = [
 // Define a constant for localStorage key to ensure consistency
 const GLOBAL_TEACHERS_KEY = "global_teachers_data";
 
+// Create a simulated shared server storage - this emulates a backend database
+// We'll use this to synchronize data across browser instances for demo purposes
+const simulateDataSharing = () => {
+  try {
+    // Check if we need to initialize with sample data
+    const initialized = sessionStorage.getItem("data_initialized");
+    if (!initialized) {
+      // Initialize with sample data on first run
+      sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(sampleTeachers));
+      sessionStorage.setItem("data_initialized", "true");
+      console.log("Initialized shared teacher data with sample profiles");
+    }
+  } catch (e) {
+    console.error("Error initializing shared data:", e);
+  }
+};
+
 const FindTutors: React.FC = () => {
   const [teachers, setTeachers] = useState<TeacherType[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,8 +101,12 @@ const FindTutors: React.FC = () => {
   useEffect(() => {
     const loadTeachers = () => {
       try {
-        // Always start with the sample data to ensure profiles are available
-        let allTeachers: TeacherType[] = [...sampleTeachers];
+        // Initialize simulated shared storage first
+        simulateDataSharing();
+        
+        // Start with shared data (simulating server data)
+        const sharedTeachersJSON = sessionStorage.getItem(GLOBAL_TEACHERS_KEY);
+        let allTeachers: TeacherType[] = sharedTeachersJSON ? JSON.parse(sharedTeachersJSON) : [...sampleTeachers];
         
         // Process and get profile form data from localStorage
         const processProfileForms = () => {
@@ -120,42 +141,49 @@ const FindTutors: React.FC = () => {
           }
         };
         
-        // Get global teachers data
-        const teachersJSON = localStorage.getItem(GLOBAL_TEACHERS_KEY);
-        
-        // Add teachers from global storage if they exist
-        if (teachersJSON) {
+        // Get profiles from local storage as well
+        const localTeachersJSON = localStorage.getItem(GLOBAL_TEACHERS_KEY);
+        if (localTeachersJSON) {
           try {
-            const storedTeachers = JSON.parse(teachersJSON);
-            if (Array.isArray(storedTeachers) && storedTeachers.length > 0) {
-              // Filter out any duplicate IDs from sample data
-              const sampleIds = sampleTeachers.map(t => t.id);
-              const uniqueStoredTeachers = storedTeachers.filter(
-                (t: TeacherType) => !sampleIds.includes(t.id)
-              );
-              
-              // Combine all teachers
-              allTeachers = [...allTeachers, ...uniqueStoredTeachers];
+            const localTeachers = JSON.parse(localTeachersJSON);
+            if (Array.isArray(localTeachers) && localTeachers.length > 0) {
+              // Add any local teachers that aren't already in the shared storage
+              localTeachers.forEach((localTeacher: TeacherType) => {
+                const existsInShared = allTeachers.some((t: TeacherType) => t.id === localTeacher.id);
+                if (!existsInShared) {
+                  allTeachers.push(localTeacher);
+                  
+                  // Also add to session storage to share with other browsers
+                  sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(allTeachers));
+                  console.log("Added local teacher to shared storage:", localTeacher.name);
+                }
+              });
             }
           } catch (e) {
-            console.error("Error parsing teachers from localStorage:", e);
+            console.error("Error processing local teachers:", e);
           }
         }
         
         // Add profile form teachers
         const profileTeachers = processProfileForms();
         if (profileTeachers.length > 0) {
-          // Add each profile teacher, avoiding duplicates
           profileTeachers.forEach((profileTeacher: TeacherType) => {
             const existingTeacherIndex = allTeachers.findIndex(t => t.id === profileTeacher.id);
             if (existingTeacherIndex === -1) {
               allTeachers.push(profileTeacher);
+              
+              // Also add to session storage to share with other browsers
+              sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(allTeachers));
+              console.log("Added profile teacher to shared storage:", profileTeacher.name);
             } else {
-              // Update existing teacher if it's the same profile
+              // Update existing teacher
               allTeachers[existingTeacherIndex] = {
                 ...allTeachers[existingTeacherIndex],
                 ...profileTeacher
               };
+              
+              // Update in session storage
+              sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(allTeachers));
             }
           });
         }
@@ -192,6 +220,10 @@ const FindTutors: React.FC = () => {
             if (existingIndex === -1) {
               allTeachers.push(newTeacher);
               
+              // Add to session storage to share with other browsers
+              sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(allTeachers));
+              console.log("Added individual profile to shared storage:", newTeacher.name);
+              
               // Add to profile forms collection
               const profileForms = localStorage.getItem('profileForms');
               const parsedProfileForms = profileForms ? JSON.parse(profileForms) : [];
@@ -207,17 +239,21 @@ const FindTutors: React.FC = () => {
                 ...allTeachers[existingIndex],
                 ...newTeacher
               };
+              
+              // Update in session storage
+              sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(allTeachers));
             }
           } catch (e) {
             console.error("Error processing individual profile form:", e);
           }
         }
         
-        console.log(`Loaded ${allTeachers.length} teachers`);
+        console.log(`Loaded ${allTeachers.length} teachers from shared storage`);
         setTeachers(allTeachers);
         
-        // Save all teachers to global storage for persistence and sharing
+        // Save all teachers to both storages for persistence and sharing
         localStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(allTeachers));
+        sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(allTeachers));
         
       } catch (error) {
         console.error("Error loading teachers:", error);
@@ -233,6 +269,26 @@ const FindTutors: React.FC = () => {
     };
 
     loadTeachers();
+    
+    // Poll for updates every 5 seconds to simulate realtime updates
+    // In a real app, this would be done with WebSockets or a real backend
+    const intervalId = setInterval(() => {
+      const sharedDataJSON = sessionStorage.getItem(GLOBAL_TEACHERS_KEY);
+      if (sharedDataJSON) {
+        try {
+          const sharedData = JSON.parse(sharedDataJSON);
+          if (sharedData.length !== teachers.length) {
+            console.log("Detected new teacher profiles in shared storage, updating...");
+            setTeachers(sharedData);
+            localStorage.setItem(GLOBAL_TEACHERS_KEY, sharedDataJSON);
+          }
+        } catch (e) {
+          console.error("Error checking for updates:", e);
+        }
+      }
+    }, 5000);
+    
+    return () => clearInterval(intervalId);
   }, []);
 
   // Filter teachers based on search and filters

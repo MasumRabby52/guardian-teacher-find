@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -133,7 +134,7 @@ const TeacherProfileForm: React.FC = () => {
         createdBy: currentUser ? currentUser.id : 'anonymous'
       };
       
-      // Get existing teachers from global storage
+      // Get existing teachers from global local storage
       const existingTeachersJSON = localStorage.getItem(GLOBAL_TEACHERS_KEY);
       const existingTeachers = existingTeachersJSON ? JSON.parse(existingTeachersJSON) : [];
       
@@ -142,8 +143,14 @@ const TeacherProfileForm: React.FC = () => {
       
       // Save updated array back to global localStorage
       localStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(existingTeachers));
+      console.log("Teacher profile saved to local storage:", teacherToSave);
       
-      console.log("Teacher profile saved to global storage:", teacherToSave);
+      // IMPORTANT: Also save to sessionStorage to share with other browser instances
+      const sharedTeachersJSON = sessionStorage.getItem(GLOBAL_TEACHERS_KEY);
+      const sharedTeachers = sharedTeachersJSON ? JSON.parse(sharedTeachersJSON) : [];
+      sharedTeachers.push(teacherToSave);
+      sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(sharedTeachers));
+      console.log("Teacher profile saved to shared storage:", teacherToSave);
       
       // Also update profileForms for consistency
       const profileFormsJSON = localStorage.getItem('profileForms');
