@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
@@ -8,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { TeacherType } from "@/components/common/TeacherCard";
+import { toast } from "@/components/ui/use-toast";
 
 // Sample teacher data as fallback
 const sampleTeacherData = {
@@ -61,12 +63,27 @@ const TeacherProfile: React.FC = () => {
   const navigate = useNavigate();
   const [teacher, setTeacher] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+
+  // Use the same global storage key as in FindTutors
+  const GLOBAL_TEACHERS_KEY = "global_teachers_data";
 
   useEffect(() => {
+    // Check if user is logged in
+    const userJSON = localStorage.getItem("currentUser");
+    if (userJSON) {
+      try {
+        const user = JSON.parse(userJSON);
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+    
     const loadTeacherData = () => {
       try {
-        // Get teachers from localStorage
-        const teachersJSON = localStorage.getItem('teachers');
+        // Get teachers from global storage
+        const teachersJSON = localStorage.getItem(GLOBAL_TEACHERS_KEY);
         
         if (teachersJSON) {
           const teachers = JSON.parse(teachersJSON);
@@ -78,7 +95,7 @@ const TeacherProfile: React.FC = () => {
             const enhancedTeacher = {
               ...foundTeacher,
               education: foundTeacher.education || [
-                `${foundTeacher.qualifications}`
+                `${foundTeacher.qualifications || "Bachelor's degree"}`
               ],
               certifications: foundTeacher.certifications || [
                 "Teacher Certification"
@@ -89,26 +106,73 @@ const TeacherProfile: React.FC = () => {
             };
             
             setTeacher(enhancedTeacher);
+            console.log("Found teacher in global data:", enhancedTeacher);
           } else {
-            // If no teacher found with that ID, use sample data
-            console.log("Teacher not found, using sample data");
-            setTeacher(sampleTeacherData);
+            // If no teacher found with that ID, try to find in sample data
+            const sampleTeacher = sampleTeacherData.id === id ? sampleTeacherData : null;
+            if (sampleTeacher) {
+              setTeacher(sampleTeacher);
+              console.log("Teacher found in sample data");
+            } else {
+              toast({
+                title: "Teacher not found",
+                description: "The requested teacher profile could not be found.",
+                variant: "destructive",
+              });
+              navigate("/find-tutors");
+            }
           }
         } else {
-          // If no teachers in localStorage, use sample data
-          console.log("No teachers in localStorage, using sample data");
-          setTeacher(sampleTeacherData);
+          // If no teachers in localStorage, check if it's a sample teacher
+          const sampleTeacher = sampleTeacherData.id === id ? sampleTeacherData : null;
+          if (sampleTeacher) {
+            setTeacher(sampleTeacher);
+            console.log("Teacher found in sample data");
+          } else {
+            toast({
+              title: "Teacher not found",
+              description: "The requested teacher profile could not be found.",
+              variant: "destructive",
+            });
+            navigate("/find-tutors");
+          }
         }
       } catch (error) {
         console.error("Error loading teacher data:", error);
-        setTeacher(sampleTeacherData);
+        if (sampleTeacherData.id === id) {
+          setTeacher(sampleTeacherData);
+        } else {
+          toast({
+            title: "Error",
+            description: "Failed to load teacher profile",
+            variant: "destructive",
+          });
+          navigate("/find-tutors");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     loadTeacherData();
-  }, [id]);
+  }, [id, navigate]);
+
+  const handleContactTeacher = () => {
+    if (!currentUser) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to contact this teacher",
+        variant: "destructive",
+      });
+      navigate("/login");
+      return;
+    }
+    
+    toast({
+      title: "Message Sent",
+      description: `Your contact request has been sent to ${teacher.name}`,
+    });
+  };
 
   if (loading) {
     return (
@@ -116,6 +180,21 @@ const TeacherProfile: React.FC = () => {
         <Navbar />
         <div className="flex-grow flex items-center justify-center">
           <p className="text-xl">Loading teacher profile...</p>
+        </div>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!teacher) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-grow flex items-center justify-center flex-col gap-4">
+          <p className="text-xl">Teacher profile not found</p>
+          <Button onClick={() => navigate("/find-tutors")}>
+            Back to Find Tutors
+          </Button>
         </div>
         <Footer />
       </div>
@@ -139,7 +218,7 @@ const TeacherProfile: React.FC = () => {
                       <Avatar className="h-32 w-32 border-4 border-white -mt-16 bg-white">
                         <AvatarImage src={teacher.avatar} alt={teacher.name} />
                         <AvatarFallback className="text-3xl bg-brand-purple text-white">
-                          {teacher.name.split(' ').map(n => n[0]).join('')}
+                          {teacher.name.split(' ').map((n: string) => n[0]).join('')}
                         </AvatarFallback>
                       </Avatar>
                       <div className="mt-4 flex items-center">
@@ -161,7 +240,10 @@ const TeacherProfile: React.FC = () => {
                         <div className="text-2xl font-semibold text-gray-900">${teacher.hourlyRate}/hr</div>
                         <div className="text-gray-500">{teacher.location}</div>
                       </div>
-                      <Button className="mt-4 w-full bg-brand-blue hover:bg-brand-blue/90">
+                      <Button 
+                        className="mt-4 w-full bg-brand-blue hover:bg-brand-blue/90"
+                        onClick={handleContactTeacher}
+                      >
                         Contact Teacher
                       </Button>
                     </div>
@@ -173,7 +255,7 @@ const TeacherProfile: React.FC = () => {
                       </div>
                       
                       <div className="mt-4 flex flex-wrap gap-2">
-                        {teacher.subjects.map((subject, index) => (
+                        {teacher.subjects.map((subject: string, index: number) => (
                           <Badge key={index} variant="secondary" className="bg-accent text-secondary-foreground">
                             {subject}
                           </Badge>
@@ -218,7 +300,7 @@ const TeacherProfile: React.FC = () => {
                     <div className="mb-8">
                       <h3 className="text-xl font-semibold mb-4">Education</h3>
                       <ul className="space-y-2 ml-5 list-disc text-gray-700">
-                        {teacher.education.map((edu, index) => (
+                        {teacher.education.map((edu: string, index: number) => (
                           <li key={index}>{edu}</li>
                         ))}
                       </ul>
@@ -227,7 +309,7 @@ const TeacherProfile: React.FC = () => {
                     <div>
                       <h3 className="text-xl font-semibold mb-4">Certifications</h3>
                       <ul className="space-y-2 ml-5 list-disc text-gray-700">
-                        {teacher.certifications.map((cert, index) => (
+                        {teacher.certifications.map((cert: string, index: number) => (
                           <li key={index}>{cert}</li>
                         ))}
                       </ul>
@@ -240,31 +322,43 @@ const TeacherProfile: React.FC = () => {
                 <Card>
                   <CardContent className="p-6">
                     <h3 className="text-xl font-semibold mb-6">Student Reviews</h3>
-                    <div className="space-y-6">
-                      {teacher.reviews.map((review) => (
-                        <div key={review.id} className="border-b pb-6 last:border-b-0 last:pb-0">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <h4 className="font-semibold">{review.name}</h4>
-                              <div className="flex mt-1">
-                                {[...Array(5)].map((_, i) => (
-                                  <svg 
-                                    key={i} 
-                                    className={`w-4 h-4 ${i < review.rating ? "text-yellow-400" : "text-gray-300"}`}
-                                    fill="currentColor" 
-                                    viewBox="0 0 20 20"
-                                  >
-                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path>
-                                  </svg>
-                                ))}
+                    {teacher.reviews.length > 0 ? (
+                      <div className="space-y-6">
+                        {teacher.reviews.map((review: any) => (
+                          <div key={review.id} className="border-b pb-6 last:border-b-0 last:pb-0">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <h4 className="font-semibold">{review.name}</h4>
+                                <div className="flex mt-1">
+                                  {[...Array(5)].map((_, i) => (
+                                    <svg 
+                                      key={i} 
+                                      className={`w-4 h-4 ${i < review.rating ? "text-yellow-400" : "text-gray-300"}`}
+                                      fill="currentColor" 
+                                      viewBox="0 0 20 20"
+                                    >
+                                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.462a1 1 0 00.95-.69l1.07-3.292z"></path>
+                                    </svg>
+                                  ))}
+                                </div>
                               </div>
+                              <span className="text-sm text-gray-500">{review.date}</span>
                             </div>
-                            <span className="text-sm text-gray-500">{review.date}</span>
+                            <p className="mt-3 text-gray-700">{review.comment}</p>
                           </div>
-                          <p className="mt-3 text-gray-700">{review.comment}</p>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-500">No reviews yet. Be the first to leave a review!</p>
+                    )}
+                    
+                    {currentUser && (
+                      <div className="mt-8 pt-6 border-t">
+                        <Button className="bg-brand-blue hover:bg-brand-blue/90">
+                          Leave a Review
+                        </Button>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>

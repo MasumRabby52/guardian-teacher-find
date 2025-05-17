@@ -77,6 +77,9 @@ const FindTutors: React.FC = () => {
   const [subjectFilter, setSubjectFilter] = useState<string>("");
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 200]);
   const [experienceFilter, setExperienceFilter] = useState<number>(0);
+  
+  // Use a global storage key for consistency
+  const GLOBAL_TEACHERS_KEY = "global_teachers_data";
 
   useEffect(() => {
     const loadTeachers = () => {
@@ -84,40 +87,43 @@ const FindTutors: React.FC = () => {
         // Always start with the sample data to ensure profiles are available
         let allTeachers = [...sampleTeachers];
         
-        // Get and process profile form data
-        const processProfileFormData = () => {
-          const profileFormJSON = localStorage.getItem('profileForm');
-          if (profileFormJSON) {
-            try {
-              const profileFormData = JSON.parse(profileFormJSON);
+        // Process and get profile form data from localStorage
+        const processProfileForms = () => {
+          // Get all profile forms
+          const profileFormsJSON = localStorage.getItem('profileForms');
+          if (!profileFormsJSON) return [];
+          
+          try {
+            const profileForms = JSON.parse(profileFormsJSON);
+            return profileForms.map((formData: any) => {
               // Create a teacher object from profile form data
-              const newTeacher = {
-                id: `profile-${Date.now()}`,
-                name: profileFormData.fullName || profileFormData.name || 'New Teacher',
-                avatar: profileFormData.avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
-                subjects: profileFormData.subjects ? (Array.isArray(profileFormData.subjects) ? 
-                  profileFormData.subjects : profileFormData.subjects.split(',').map((s: string) => s.trim())) : ['General'],
-                experience: parseInt(profileFormData.experienceYears || profileFormData.experience) || 1,
+              return {
+                id: formData.id || `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                name: formData.fullName || formData.name || 'New Teacher',
+                avatar: formData.avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
+                subjects: formData.subjects ? (Array.isArray(formData.subjects) ? 
+                  formData.subjects : formData.subjects.split(',').map((s: string) => s.trim())) : ['General'],
+                experience: parseInt(formData.experienceYears || formData.experience) || 1,
                 rating: 5.0,
-                hourlyRate: parseInt(profileFormData.hourlyRate) || 30,
-                location: profileFormData.location || 'Unknown Location',
-                availability: profileFormData.availability || 'Flexible hours',
-                bio: profileFormData.bio || 'New tutor on the platform',
-                education: profileFormData.qualifications ? [profileFormData.qualifications] : ['Bachelor\'s degree'],
-                certifications: profileFormData.certifications ? [profileFormData.certifications] : ['Certified Teacher']
+                hourlyRate: parseInt(formData.hourlyRate) || 30,
+                location: formData.location || 'Unknown Location',
+                availability: formData.availability || 'Flexible hours',
+                bio: formData.bio || 'New tutor on the platform',
+                education: formData.qualifications ? [formData.qualifications] : ['Bachelor\'s degree'],
+                certifications: formData.certifications ? [formData.certifications] : ['Certified Teacher'],
+                createdBy: formData.userId || 'anonymous'
               };
-              return newTeacher;
-            } catch (e) {
-              console.error("Error parsing profile form data:", e);
-            }
+            });
+          } catch (e) {
+            console.error("Error parsing profile forms:", e);
+            return [];
           }
-          return null;
         };
         
-        // Get teachers from localStorage
-        const teachersJSON = localStorage.getItem('teachers');
+        // Get global teachers data
+        const teachersJSON = localStorage.getItem(GLOBAL_TEACHERS_KEY);
         
-        // Add teachers from localStorage if exist
+        // Add teachers from global storage if they exist
         if (teachersJSON) {
           try {
             const storedTeachers = JSON.parse(teachersJSON);
@@ -136,25 +142,81 @@ const FindTutors: React.FC = () => {
           }
         }
         
-        // Add profile form teacher if it exists and isn't already in the list
-        const profileTeacher = processProfileFormData();
-        if (profileTeacher) {
-          // Check if this profile already exists in allTeachers to avoid duplicates
-          const existingProfileIndex = allTeachers.findIndex(t => 
-            t.name === profileTeacher.name && 
-            t.bio === profileTeacher.bio
-          );
-          
-          if (existingProfileIndex === -1) {
-            allTeachers.push(profileTeacher);
+        // Add profile form teachers
+        const profileTeachers = processProfileForms();
+        if (profileTeachers.length > 0) {
+          // Add each profile teacher, avoiding duplicates
+          profileTeachers.forEach((profileTeacher: TeacherType) => {
+            const existingTeacherIndex = allTeachers.findIndex(t => t.id === profileTeacher.id);
+            if (existingTeacherIndex === -1) {
+              allTeachers.push(profileTeacher);
+            } else {
+              // Update existing teacher if it's the same profile
+              allTeachers[existingTeacherIndex] = {
+                ...allTeachers[existingTeacherIndex],
+                ...profileTeacher
+              };
+            }
+          });
+        }
+        
+        // Also process individual profile form submission if it exists
+        const profileFormJSON = localStorage.getItem('profileForm');
+        if (profileFormJSON) {
+          try {
+            const profileFormData = JSON.parse(profileFormJSON);
+            
+            // Get current user
+            const currentUserJSON = localStorage.getItem('currentUser');
+            const currentUser = currentUserJSON ? JSON.parse(currentUserJSON) : null;
+            
+            const newTeacher = {
+              id: profileFormData.id || `profile-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+              name: profileFormData.fullName || profileFormData.name || (currentUser ? currentUser.name : 'New Teacher'),
+              avatar: profileFormData.avatar || 'https://randomuser.me/api/portraits/lego/1.jpg',
+              subjects: profileFormData.subjects ? (Array.isArray(profileFormData.subjects) ? 
+                profileFormData.subjects : profileFormData.subjects.split(',').map((s: string) => s.trim())) : ['General'],
+              experience: parseInt(profileFormData.experienceYears || profileFormData.experience) || 1,
+              rating: 5.0,
+              hourlyRate: parseInt(profileFormData.hourlyRate) || 30,
+              location: profileFormData.location || 'Unknown Location',
+              availability: profileFormData.availability || 'Flexible hours',
+              bio: profileFormData.bio || 'New tutor on the platform',
+              education: profileFormData.qualifications ? [profileFormData.qualifications] : ['Bachelor\'s degree'],
+              certifications: profileFormData.certifications ? [profileFormData.certifications] : ['Certified Teacher'],
+              createdBy: currentUser ? currentUser.id : 'anonymous'
+            };
+            
+            // Check if this profile already exists
+            const existingIndex = allTeachers.findIndex(t => t.id === newTeacher.id);
+            if (existingIndex === -1) {
+              allTeachers.push(newTeacher);
+              
+              // Add to profile forms collection
+              const profileForms = profileFormsJSON ? JSON.parse(profileFormsJSON) : [];
+              profileForms.push({
+                ...profileFormData,
+                id: newTeacher.id,
+                userId: currentUser ? currentUser.id : 'anonymous'
+              });
+              localStorage.setItem('profileForms', JSON.stringify(profileForms));
+            } else {
+              // Update if exists
+              allTeachers[existingIndex] = {
+                ...allTeachers[existingIndex],
+                ...newTeacher
+              };
+            }
+          } catch (e) {
+            console.error("Error processing individual profile form:", e);
           }
         }
         
         console.log(`Loaded ${allTeachers.length} teachers`);
         setTeachers(allTeachers);
         
-        // Save all teachers to localStorage for persistence
-        localStorage.setItem('teachers', JSON.stringify(allTeachers));
+        // Save all teachers to global storage for persistence and sharing
+        localStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(allTeachers));
         
       } catch (error) {
         console.error("Error loading teachers:", error);
