@@ -9,6 +9,8 @@ import { Link } from "react-router-dom";
 export type TeacherType = {
   id: string;
   name: string;
+  email: string;
+  phone: string;
   avatar?: string;
   subjects: string[];
   experience: number;
@@ -17,11 +19,13 @@ export type TeacherType = {
   location: string;
   availability: string;
   bio: string;
+  qualifications: string;
   education?: string[];
   certifications?: string[];
   createdBy?: string;
   teachingApproach?: string;
   reviews?: any[];
+  createdAt?: string;
 };
 
 interface TeacherCardProps {

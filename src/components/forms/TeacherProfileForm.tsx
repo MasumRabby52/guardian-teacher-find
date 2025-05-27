@@ -18,13 +18,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Card,
@@ -113,7 +106,7 @@ const TeacherProfileForm: React.FC = () => {
       const currentUserJSON = localStorage.getItem("currentUser");
       const currentUser = currentUserJSON ? JSON.parse(currentUserJSON) : null;
       
-      // Create teacher profile data
+      // Create teacher profile data with all required fields
       const teacherProfileData = {
         name: data.name,
         email: data.email,
@@ -126,6 +119,7 @@ const TeacherProfileForm: React.FC = () => {
         location: data.location,
         availability: data.availability,
         avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg",
+        rating: 5.0, // Default rating for new teachers
         createdBy: currentUser ? currentUser.id : 'anonymous'
       };
       
