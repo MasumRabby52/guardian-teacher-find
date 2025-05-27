@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { TeacherType } from "@/components/common/TeacherCard";
 import { toast } from "@/components/ui/use-toast";
+import { useTeacherProfiles } from "@/hooks/useTeacherProfiles";
 
 // Sample teacher data as fallback
 const sampleTeacherData = {
@@ -63,6 +64,7 @@ const GLOBAL_TEACHERS_KEY = "global_teachers_data";
 const TeacherProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { teachers, loading: teachersLoading } = useTeacherProfiles();
   const [teacher, setTeacher] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -78,132 +80,32 @@ const TeacherProfile: React.FC = () => {
         console.error("Error parsing user data:", error);
       }
     }
-    
-    const loadTeacherData = () => {
-      try {
-        // First look in shared session storage (simulating server data)
-        const sharedTeachersJSON = sessionStorage.getItem(GLOBAL_TEACHERS_KEY);
-        let foundTeacher = null;
-        
-        if (sharedTeachersJSON) {
-          const sharedTeachers = JSON.parse(sharedTeachersJSON);
-          foundTeacher = sharedTeachers.find((t: any) => t.id === id);
-          if (foundTeacher) {
-            console.log("Found teacher in shared storage:", foundTeacher.name);
-          }
-        }
-        
-        // If not found in shared storage, try local storage
-        if (!foundTeacher) {
-          const localTeachersJSON = localStorage.getItem(GLOBAL_TEACHERS_KEY);
-          if (localTeachersJSON) {
-            const localTeachers = JSON.parse(localTeachersJSON);
-            foundTeacher = localTeachers.find((t: any) => t.id === id);
-            if (foundTeacher) {
-              console.log("Found teacher in local storage:", foundTeacher.name);
-              
-              // Update shared storage for other browsers to see
-              const sharedTeachers = sharedTeachersJSON ? JSON.parse(sharedTeachersJSON) : [];
-              const teacherExists = sharedTeachers.some((t: any) => t.id === foundTeacher.id);
-              
-              if (!teacherExists) {
-                sharedTeachers.push(foundTeacher);
-                sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(sharedTeachers));
-                console.log("Added teacher to shared storage:", foundTeacher.name);
-              }
-            }
-          }
-        }
-        
-        if (foundTeacher) {
-          // Add default properties if they don't exist
-          const enhancedTeacher = {
-            ...foundTeacher,
-            education: foundTeacher.education || [
-              `${foundTeacher.qualifications || "Bachelor's degree"}`
-            ],
-            certifications: foundTeacher.certifications || [
-              "Teacher Certification"
-            ],
-            teachingApproach: foundTeacher.teachingApproach || 
-              `As a teacher with ${foundTeacher.experience} years of experience, I focus on helping students understand ${foundTeacher.subjects.join(", ")} through personalized lessons tailored to each student's needs.`,
-            reviews: foundTeacher.reviews || []
-          };
-          
-          setTeacher(enhancedTeacher);
-        } else {
-          // If no teacher found with that ID, try to find in sample data
-          const sampleTeacher = sampleTeacherData.id === id ? sampleTeacherData : null;
-          if (sampleTeacher) {
-            setTeacher(sampleTeacher);
-            console.log("Teacher found in sample data");
-            
-            // Add sample teacher to shared storage
-            const sharedTeachers = sharedTeachersJSON ? JSON.parse(sharedTeachersJSON) : [];
-            const teacherExists = sharedTeachers.some((t: any) => t.id === sampleTeacher.id);
-            
-            if (!teacherExists) {
-              sharedTeachers.push(sampleTeacher);
-              sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(sharedTeachers));
-              console.log("Added sample teacher to shared storage");
-            }
-          } else {
-            toast({
-              title: "Teacher not found",
-              description: "The requested teacher profile could not be found.",
-              variant: "destructive",
-            });
-            navigate("/find-tutors");
-          }
-        }
-      } catch (error) {
-        console.error("Error loading teacher data:", error);
-        if (sampleTeacherData.id === id) {
-          setTeacher(sampleTeacherData);
-        } else {
-          toast({
-            title: "Error",
-            description: "Failed to load teacher profile",
-            variant: "destructive",
-          });
-          navigate("/find-tutors");
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
+  }, []);
 
-    loadTeacherData();
-    
-    // Check for updates to the profile every few seconds
-    const intervalId = setInterval(() => {
-      if (id) {
-        const sharedTeachersJSON = sessionStorage.getItem(GLOBAL_TEACHERS_KEY);
-        if (sharedTeachersJSON) {
-          try {
-            const sharedTeachers = JSON.parse(sharedTeachersJSON);
-            const updatedTeacher = sharedTeachers.find((t: any) => t.id === id);
-            if (updatedTeacher && teacher && 
-                (updatedTeacher.name !== teacher.name || 
-                 updatedTeacher.bio !== teacher.bio)) {
-              console.log("Teacher profile was updated, refreshing...");
-              setTeacher({
-                ...updatedTeacher,
-                education: updatedTeacher.education || teacher.education,
-                certifications: updatedTeacher.certifications || teacher.certifications,
-                teachingApproach: updatedTeacher.teachingApproach || teacher.teachingApproach,
-                reviews: updatedTeacher.reviews || teacher.reviews
-              });
-            }
-          } catch (e) {
-            console.error("Error checking for profile updates:", e);
-          }
-        }
+  useEffect(() => {
+    if (!teachersLoading && teachers.length > 0 && id) {
+      const foundTeacher = teachers.find(t => t.id === id);
+      
+      if (foundTeacher) {
+        // Add default properties if they don't exist
+        const enhancedTeacher = {
+          ...foundTeacher,
+          education: foundTeacher.education || [`${foundTeacher.qualifications || "Bachelor's degree"}`],
+          certifications: foundTeacher.certifications || ["Teacher Certification"],
+          teachingApproach: foundTeacher.teachingApproach || 
+            `As a teacher with ${foundTeacher.experience} years of experience, I focus on helping students understand ${foundTeacher.subjects.join(", ")} through personalized lessons tailored to each student's needs.`,
+          reviews: foundTeacher.reviews || []
+        };
+        
+        setTeacher(enhancedTeacher);
+        console.log("Teacher found:", enhancedTeacher.name);
+      } else {
+        console.log("Teacher not found with ID:", id);
+        navigate("/find-tutors");
       }
-    }, 5000);
-    
-    return () => clearInterval(intervalId);
-  }, [id, navigate, teacher]);
+      setLoading(false);
+    }
+  }, [teachers, teachersLoading, id, navigate]);
 
   const handleContactTeacher = () => {
     if (!currentUser) {
@@ -222,7 +124,7 @@ const TeacherProfile: React.FC = () => {
     });
   };
 
-  if (loading) {
+  if (loading || teachersLoading) {
     return (
       <div className="min-h-screen flex flex-col">
         <Navbar />

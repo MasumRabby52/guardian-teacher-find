@@ -1,10 +1,10 @@
-
 import React, { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { useTeacherProfiles } from "@/hooks/useTeacherProfiles";
 
 import {
   Form,
@@ -76,6 +76,7 @@ const TeacherProfileForm: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const { saveTeacherProfile } = useTeacherProfiles();
   
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -106,18 +107,14 @@ const TeacherProfileForm: React.FC = () => {
     }
   };
 
-  const onSubmit = (data: ProfileFormValues) => {
+  const onSubmit = async (data: ProfileFormValues) => {
     try {
-      // Generate a unique ID for the teacher profile
-      const teacherId = `teacher_${Date.now()}`;
-      
       // Get current user
       const currentUserJSON = localStorage.getItem("currentUser");
       const currentUser = currentUserJSON ? JSON.parse(currentUserJSON) : null;
       
-      // Create a teacher object to save
-      const teacherToSave = {
-        id: teacherId,
+      // Create teacher profile data
+      const teacherProfileData = {
         name: data.name,
         email: data.email,
         phone: data.phone,
@@ -128,79 +125,22 @@ const TeacherProfileForm: React.FC = () => {
         qualifications: data.qualifications,
         location: data.location,
         availability: data.availability,
-        avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg", // Ensure avatar is never null
-        rating: 5.0, // Default rating for new teachers
-        createdAt: new Date().toISOString(),
+        avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg",
         createdBy: currentUser ? currentUser.id : 'anonymous'
       };
       
-      // Get existing teachers from global local storage
-      const existingTeachersJSON = localStorage.getItem(GLOBAL_TEACHERS_KEY);
-      const existingTeachers = existingTeachersJSON ? JSON.parse(existingTeachersJSON) : [];
-      
-      // Add new teacher to array
-      existingTeachers.push(teacherToSave);
-      
-      // Save updated array back to global localStorage
-      localStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(existingTeachers));
-      console.log("Teacher profile saved to local storage:", teacherToSave);
-      
-      // IMPORTANT: Also save to sessionStorage to share with other browser instances
-      const sharedTeachersJSON = sessionStorage.getItem(GLOBAL_TEACHERS_KEY);
-      const sharedTeachers = sharedTeachersJSON ? JSON.parse(sharedTeachersJSON) : [];
-      sharedTeachers.push(teacherToSave);
-      sessionStorage.setItem(GLOBAL_TEACHERS_KEY, JSON.stringify(sharedTeachers));
-      console.log("Teacher profile saved to shared storage:", teacherToSave);
-      
-      // Also update profileForms for consistency
-      const profileFormsJSON = localStorage.getItem('profileForms');
-      const profileForms = profileFormsJSON ? JSON.parse(profileFormsJSON) : [];
-      
-      profileForms.push({
-        id: teacherId,
-        name: data.name,
-        email: data.email,
-        phone: data.phone, 
-        bio: data.bio,
-        subjects: data.subjects,
-        experienceYears: data.experience,
-        hourlyRate: data.hourlyRate,
-        qualifications: data.qualifications,
-        location: data.location,
-        availability: data.availability,
-        avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg",
-        userId: currentUser ? currentUser.id : 'anonymous'
-      });
-      
-      localStorage.setItem('profileForms', JSON.stringify(profileForms));
-      console.log("Profile forms updated");
-      
-      // For individual profile form - this helps with immediate updates
-      localStorage.setItem('profileForm', JSON.stringify({
-        id: teacherId,
-        name: data.name,
-        email: data.email,
-        phone: data.phone, 
-        bio: data.bio,
-        subjects: data.subjects,
-        experienceYears: data.experience,
-        hourlyRate: data.hourlyRate,
-        qualifications: data.qualifications,
-        location: data.location,
-        availability: data.availability,
-        avatar: avatarPreview || "https://randomuser.me/api/portraits/lego/1.jpg",
-        userId: currentUser ? currentUser.id : 'anonymous'
-      }));
+      // Save to backend - this will be visible to all users
+      const savedTeacher = await saveTeacherProfile(teacherProfileData);
       
       // Show success toast
       toast({
         title: "Profile Created!",
-        description: "Your teacher profile has been successfully created and is now visible to others.",
+        description: "Your teacher profile has been successfully created and is now visible to all users.",
       });
       
       // Navigate to teacher profile page
       setTimeout(() => {
-        navigate(`/teacher/${teacherId}`);
+        navigate(`/teacher/${savedTeacher.id}`);
       }, 1500);
     } catch (error) {
       console.error("Error saving teacher profile:", error);
