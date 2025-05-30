@@ -3,7 +3,6 @@ import React from "react";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/sections/HeroSection";
-import FeatureSection from "@/components/sections/FeatureSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
 import TestimonialsSection from "@/components/sections/TestimonialsSection";
 import { Button } from "@/components/ui/button";
@@ -16,8 +15,6 @@ const Index = () => {
       
       <main className="flex-grow">
         <HeroSection />
-        
-        <FeatureSection />
         
         <HowItWorksSection />
         
