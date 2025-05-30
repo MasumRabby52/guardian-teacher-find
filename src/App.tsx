@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Index from "./pages/Index";
 import FindTutors from "./pages/FindTutors";
 import BecomeTutor from "./pages/BecomeTutor";
@@ -13,6 +13,7 @@ import TeacherProfile from "./pages/TeacherProfile";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import AuthPage from "./pages/AuthPage";
 
 // Initialize shared data system 
 const initializeSharedData = () => {
@@ -58,10 +59,33 @@ const initializeSharedData = () => {
 const queryClient = new QueryClient();
 
 const App = () => {
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
     // Initialize shared data on app startup
     initializeSharedData();
+    
+    // Check if user is logged in
+    const userJSON = localStorage.getItem("currentUser");
+    if (userJSON) {
+      try {
+        const user = JSON.parse(userJSON);
+        setCurrentUser(user);
+      } catch (error) {
+        console.error("Error parsing user data:", error);
+      }
+    }
+    setIsLoading(false);
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-brand-blue"></div>
+      </div>
+    );
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -69,16 +93,25 @@ const App = () => {
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/find-tutors" element={<FindTutors />} />
-            <Route path="/become-tutor" element={<BecomeTutor />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/teacher/:id" element={<TeacherProfile />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          {!currentUser ? (
+            <Routes>
+              <Route path="/" element={<AuthPage />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="*" element={<AuthPage />} />
+            </Routes>
+          ) : (
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/find-tutors" element={<FindTutors />} />
+              <Route path="/become-tutor" element={<BecomeTutor />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/teacher/:id" element={<TeacherProfile />} />
+              <Route path="/login" element={<Index />} />
+              <Route path="/register" element={<Index />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          )}
         </BrowserRouter>
       </TooltipProvider>
     </QueryClientProvider>
