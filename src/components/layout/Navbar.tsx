@@ -11,8 +11,7 @@ const Navbar: React.FC = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check if user is logged in
+  const checkAuthStatus = () => {
     const userJSON = localStorage.getItem("currentUser");
     if (userJSON) {
       try {
@@ -20,8 +19,24 @@ const Navbar: React.FC = () => {
         setCurrentUser(user);
       } catch (error) {
         console.error("Error parsing user data:", error);
+        setCurrentUser(null);
       }
+    } else {
+      setCurrentUser(null);
     }
+  };
+
+  useEffect(() => {
+    // Check initial auth status
+    checkAuthStatus();
+
+    // Listen for auth changes
+    const handleAuthChange = () => {
+      checkAuthStatus();
+    };
+
+    window.addEventListener("authChange", handleAuthChange);
+    return () => window.removeEventListener("authChange", handleAuthChange);
   }, []);
 
   const handleLogout = () => {
@@ -29,12 +44,15 @@ const Navbar: React.FC = () => {
     localStorage.removeItem("currentUser");
     setCurrentUser(null);
     
+    // Trigger custom event to notify App component
+    window.dispatchEvent(new Event("authChange"));
+    
     toast({
       title: "Logged out successfully",
       description: "You have been logged out of your account.",
     });
     
-    // Redirect to home page
+    // Redirect to auth page
     navigate("/");
   };
 

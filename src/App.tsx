@@ -62,11 +62,7 @@ const App = () => {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  useEffect(() => {
-    // Initialize shared data on app startup
-    initializeSharedData();
-    
-    // Check if user is logged in
+  const checkAuthStatus = () => {
     const userJSON = localStorage.getItem("currentUser");
     if (userJSON) {
       try {
@@ -74,9 +70,40 @@ const App = () => {
         setCurrentUser(user);
       } catch (error) {
         console.error("Error parsing user data:", error);
+        localStorage.removeItem("currentUser");
       }
+    } else {
+      setCurrentUser(null);
     }
+  };
+
+  useEffect(() => {
+    // Initialize shared data on app startup
+    initializeSharedData();
+    
+    // Check authentication status
+    checkAuthStatus();
     setIsLoading(false);
+
+    // Listen for storage changes (when user logs in/out in another tab)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "currentUser") {
+        checkAuthStatus();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, []);
+
+  // Custom event listener for login/logout within the same tab
+  useEffect(() => {
+    const handleAuthChange = () => {
+      checkAuthStatus();
+    };
+
+    window.addEventListener("authChange", handleAuthChange);
+    return () => window.removeEventListener("authChange", handleAuthChange);
   }, []);
 
   if (isLoading) {
