@@ -4,7 +4,6 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import HeroSection from "@/components/sections/HeroSection";
 import HowItWorksSection from "@/components/sections/HowItWorksSection";
-import TestimonialsSection from "@/components/sections/TestimonialsSection";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
@@ -17,8 +16,6 @@ const Index = () => {
         <HeroSection />
         
         <HowItWorksSection />
-        
-        <TestimonialsSection />
         
         {/* Call to Action Section */}
         <section className="py-16 bg-gradient-to-r from-brand-blue to-brand-purple text-white">
