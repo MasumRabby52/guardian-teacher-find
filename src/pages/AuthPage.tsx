@@ -1,9 +1,9 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { UserPlus, LogIn, BookOpen, Users, Star, Trophy } from "lucide-react";
+import { UserPlus, LogIn, BookOpen } from "lucide-react";
 
 const AuthPage: React.FC = () => {
   return (
@@ -18,104 +18,93 @@ const AuthPage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-12">
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Hero Section */}
-          <div className="mb-12">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6">
-              Connect with the <span className="gradient-text">Perfect Tutor</span>
-            </h1>
-            <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-              Join our community of qualified teachers and passionate students. 
-              Start your educational journey today!
-            </p>
-          </div>
-
-          {/* Features Grid */}
-          <div className="grid md:grid-cols-3 gap-6 mb-12">
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-brand-blue rounded-full flex items-center justify-center mx-auto mb-4">
-                <BookOpen className="h-8 w-8 text-white" />
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-6xl mx-auto">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            
+            {/* Left Side - Welcome Message and Auth */}
+            <div className="space-y-8">
+              {/* Welcome Message */}
+              <div className="text-center lg:text-left">
+                <h1 className="text-4xl md:text-5xl font-bold mb-6">
+                  Welcome to <span className="gradient-text">TutorConnect</span>
+                </h1>
+                <p className="text-xl text-gray-600 mb-4">
+                  For Teachers and Guardians
+                </p>
+                <p className="text-lg text-gray-500 max-w-lg">
+                  Connect qualified educators with students seeking academic excellence. 
+                  Join our community dedicated to educational success.
+                </p>
               </div>
-              <h3 className="text-xl font-semibold mb-2">Expert Tutors</h3>
-              <p className="text-gray-600">Learn from qualified and experienced teachers</p>
-            </div>
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-brand-purple rounded-full flex items-center justify-center mx-auto mb-4">
-                <Users className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Community</h3>
-              <p className="text-gray-600">Join a supportive learning community</p>
-            </div>
-            <div className="text-center p-6">
-              <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Trophy className="h-8 w-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Success</h3>
-              <p className="text-gray-600">Achieve your academic goals</p>
-            </div>
-          </div>
 
-          {/* Auth Cards */}
-          <div className="grid md:grid-cols-2 gap-8 max-w-2xl mx-auto">
-            {/* Login Card */}
-            <Card className="card-hover">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 justify-center">
-                  <LogIn className="h-5 w-5 text-brand-blue" />
-                  Welcome Back
-                </CardTitle>
-                <CardDescription>
-                  Sign in to your existing account
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full bg-brand-blue hover:bg-brand-blue/90">
-                  <Link to="/login">
-                    Login to Your Account
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
+              {/* Auth Cards */}
+              <div className="grid gap-6 max-w-md mx-auto lg:mx-0">
+                {/* Login Card */}
+                <Card className="card-hover">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 justify-center text-lg">
+                      <LogIn className="h-5 w-5 text-brand-blue" />
+                      Login System
+                    </CardTitle>
+                    <CardDescription className="text-center">
+                      Sign in to your existing account
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button asChild className="w-full bg-brand-blue hover:bg-brand-blue/90">
+                      <Link to="/login">
+                        Login to Your Account
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
 
-            {/* Register Card */}
-            <Card className="card-hover">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 justify-center">
-                  <UserPlus className="h-5 w-5 text-brand-purple" />
-                  Get Started
-                </CardTitle>
-                <CardDescription>
-                  Create a new account to begin
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button asChild className="w-full bg-brand-purple hover:bg-brand-purple/90">
-                  <Link to="/register">
-                    Create New Account
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Stats Section */}
-          <div className="mt-16 grid grid-cols-3 gap-8 max-w-lg mx-auto">
-            <div className="text-center">
-              <div className="text-3xl font-bold text-brand-blue mb-2">500+</div>
-              <div className="text-sm text-gray-600">Expert Tutors</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-brand-purple mb-2">10k+</div>
-              <div className="text-sm text-gray-600">Students</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl font-bold text-green-500 mb-2">4.9</div>
-              <div className="text-sm text-gray-600 flex items-center justify-center gap-1">
-                <Star className="h-4 w-4 fill-current" />
-                Rating
+                {/* Register Card */}
+                <Card className="card-hover">
+                  <CardHeader className="pb-4">
+                    <CardTitle className="flex items-center gap-2 justify-center text-lg">
+                      <UserPlus className="h-5 w-5 text-brand-purple" />
+                      Registration System
+                    </CardTitle>
+                    <CardDescription className="text-center">
+                      Create a new account to get started
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <Button asChild className="w-full bg-brand-purple hover:bg-brand-purple/90">
+                      <Link to="/register">
+                        Create New Account
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </div>
+
+            {/* Right Side - Library Image */}
+            <div className="relative">
+              <div className="relative overflow-hidden rounded-2xl shadow-2xl">
+                <img 
+                  src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?w=800&h=600&fit=crop&crop=center"
+                  alt="Students reading books in library" 
+                  className="w-full h-[500px] object-cover"
+                />
+                <div className="absolute inset-0 bg-black/20"></div>
+                <div className="absolute bottom-6 left-6 right-6">
+                  <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
+                    <div className="flex items-center gap-2 text-gray-800">
+                      <BookOpen className="h-5 w-5 text-brand-blue" />
+                      <span className="font-medium">Students Reading in Library</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Creating a supportive learning environment for academic success
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </main>
